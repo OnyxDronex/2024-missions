@@ -29,7 +29,8 @@ Adafruit_NeoPixel ring = Adafruit_NeoPixel(RING_LED_NUM, LED_RING_PIN, NEO_GRB +
 
 
 int distance;
-
+unsigned long currentMillis;
+unsigned long previousMillis;
 
 //------------------------------------------------------------
 void setup() {
@@ -40,6 +41,7 @@ void setup() {
 
 
 void loop() {
+  currentMillis = millis();
   int d = getCurrentDistance();
   turnOnRings(200,0,200,d);
   delay(200);
@@ -77,12 +79,11 @@ void turnOnRings(int red, int green, int blue, int distance) {
   }else{
     num = -1;
   }
-  for(int i = 0; i  < num; ++i){
-    ring.setPixelColor(i, ring.Color(red, green, blue));
-  }
-      ring.show();
+    blink(red,green,blue,500,num);
 
 }
+
+
 
 
 //geters
@@ -95,6 +96,25 @@ int getCurrentDistance() {
   Serial.print("distance = ");
   Serial.println(distance);
   return distance;
+}
+
+void blink(int r, int g,int b, int interval, int num) {
+
+
+  if (currentMillis - previousMillis >= interval) {
+    
+    previousMillis = currentMillis;
+
+    static bool state = false;
+    state = !state;
+
+    if (state) {
+      ring.fill(ring.Color(r, g, b), 0, num);
+    } else {
+      ring.fill(ring.Color(r, g, b), 0, num);
+    }
+    ring.show(); // Update Neopixel Ring
+  }
 }
 
 
