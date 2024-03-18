@@ -1,74 +1,73 @@
 #include <SoftwareSerial.h>
 #include <Adafruit_NeoPixel.h>
-#include <Wire.h>
-
-#define SENSOR_ADDRESS 0x48
 
 #include <Servo.h>
 #include <Wire.h>
 
 //PIN declaration
-#define ECHO_PIN 8
-#define LED_RING_PIN 2
+#define TXD_PIN 4
+#define RXD_PIN 5
+#define LED_RING_PIN 6
 
 //etc
-#define RING_LED_NUM 12
-
+#define RING_LED_NUM 48
+#define DISTANCE_TO_ACTIVATE 200
 
 //objects?
+SoftwareSerial myBlue(TXD_PIN, RXD_PIN);
+Adafruit_NeoPixel ring(RING_LED_NUM, LED_RING_PIN, NEO_GRB + NEO_KHZ800);
 
-Adafruit_NeoPixel ring = Adafruit_NeoPixel(RING_LED_NUM, LED_RING_PIN, NEO_GRB + NEO_KHZ800);
+enum ColorItzhak: char{
+  RED = 'r',
+  YELLOW = 'y',
+  BLUE = 'b',
+  ORANGE = 'o',
+  GREEN = 'g',
+  PURPLE = 'p'
+};
 
-
-
-
-int distance;
-unsigned long currentMillis;
-unsigned long previousMillis;
-
-int roomtemp;
+ColorItzhak in;
 
 //------------------------------------------------------------
 void setup() {
   Serial.begin(9600);
-  Wire.begin();
+  myBlue.begin(9600);
   initSystem();
-
-  roomtemp = readTemperature();
 }
-
 
 
 void loop() {
-  currentMillis = millis();
-  float temperature = readTemperature();
-  int d = getCurrentDistance();
-  int num;
+    if(myBlue.available() == 0){
+      in = ColorItzhak(myBlue.read());
+    }
+    // in = ColorItzhak(Serial.read());
+  
 
-  if (d > 50) {
-    num = 1;
-    num = (d - 50) / 25;
-  } else {
-    num = 0;
+ 
+
+  switch (in) {
+    case RED:
+      turnLed(255,0,0);
+      break;
+    case YELLOW:
+      turnLed(200,200,0);
+      break;
+    case BLUE:
+      turnLed(0,0,255);
+      break;
+    case PURPLE:
+      turnLed(70,0,142);
+      break;
+    case ORANGE:
+      turnLed(255,70,0);
+      break;
+    case GREEN:
+      turnLed(0,255,0);
+      break;
+
   }
-
-  if (temperature > roomtemp + 2) {
-    blink(200, 0, 0, 300, num);
-
-  } else if (temperature < roomtemp - 0.5) {
-    blink(0, 0, 200, 300, num);
-
-  } else {
-    turnOnRings(0, 200, 0, num);
-  }
-  Serial.print("distance = ");
-  Serial.print(d);
-
-  Serial.print(" temp = ");
-  Serial.println(temperature);
 }
 //------------------------------------------------------------
-
 
 
 void initSystem() {
@@ -78,10 +77,8 @@ void initSystem() {
 
 
 void initPin() {
-  pinMode(ECHO_PIN, INPUT);
   pinMode(LED_RING_PIN, OUTPUT);
 }
-
 
 void initRing() {
   ring.begin();
@@ -89,64 +86,16 @@ void initRing() {
   ring.show();
 }
 
+void turnLed(int red, int green, int blue){
 
-void turnOnRings(int red, int green, int blue, int num) {
   ring.clear();
-  if (num != 0) {
-    ring.fill(ring.Color(red, green, blue), 0, num);
-  }
-  ring.show();  // Update Neopixel Ring
+
+  
+
+    ring.fill(ring.Color(red, green, blue), 0, RING_LED_NUM);
+
+  
+  ring.show(); 
 }
 
 
-
-int getCurrentDistance() {
-
-  word duration, distance;
-  duration = pulseIn(ECHO_PIN, HIGH);
-  distance = duration / 58;
-  return distance;
-}
-
-void blink(int r, int g, int b, int interval, int num) {
-  static bool state = false;
-
-  if (currentMillis - previousMillis >= interval) {
-
-    previousMillis = currentMillis;
-
-    state = !state;
-    ring.clear();
-    if (num != 0) {
-      if (state) {
-        ring.fill(ring.Color(r, g, b), 0, num);
-      }
-
-      ring.show();
-    }
-  }
-}
-
-
-float readTemperature() {
-  Wire.beginTransmission(SENSOR_ADDRESS);
-  Wire.write(0);
-  Wire.endTransmission();
-
-  delay(100);
-
-  Wire.requestFrom(SENSOR_ADDRESS, 2);
-  if (Wire.available() == 2) {
-    byte msb = Wire.read();
-    byte lsb = Wire.read();
-
-    int tempRaw = ((msb << 8) | lsb) >> 4;
-    float temperatureC = tempRaw * 0.0625;
-
-    return temperatureC;
-  } else {
-
-    Serial.println("Error: Data not available");
-    return -273.15;
-  }
-}
