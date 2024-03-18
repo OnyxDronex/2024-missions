@@ -38,10 +38,10 @@ void setup() {
 
 
 void loop() {
-    // if(myBlue.available() == 0){
-    //   in = ColorItzhak(myBlue.read());
-    // }
-    in = ColorItzhak(Serial.read());
+    if(myBlue.available() != 0){
+      in =ColorItzhak(myBlue.read());
+    }
+    // in = ColorItzhak(Serial.read());
   
 
  
@@ -91,14 +91,8 @@ void initRing() {
 }
 
 void turnLed(int red, int green, int blue){
-
   ring.clear();
-
-  
-
-    ring.fill(ring.Color(red, green, blue), 0, RING_LED_NUM);
-
-  
+  ring.fill(ring.Color(red, green, blue), 0, RING_LED_NUM);
   ring.show(); 
 }
 
